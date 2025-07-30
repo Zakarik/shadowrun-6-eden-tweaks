@@ -1,0 +1,33 @@
+<form class="flexcol {{cssClass}}" autocomplete="off">
+    {{!-- Sheet Body --}}
+    <section class="sheet-body">
+        <h2><input name="name" type="text" value="{{item.name}}" data-field="name" /></h2>
+        <img src="{{item.img}}" data-edit="img" title="{{item.name}}" style="background-color: var(--highlight-color)"/>
+        <div class="section">
+            <table>
+                <tr>
+                    <th>{{localize 'shadowrun6.lifestyle.type'}}</th>
+                    <th>{{localize 'shadowrun6.lifestyle.cost'}}</th>
+                    <th>{{localize 'shadowrun6.lifestyle.paid'}}</th>
+                    <th>{{localize 'shadowrun6.lifestyle.sin'}}</th>
+                </tr>
+                <tr>
+                    <td>
+                        <select name="lifestyleVtype" data-field="system.type">
+                            {{selectOptions config.LIFESTYLE_TYPE selected=item.system.type localize=true}}
+                        </select>
+                    </td>
+                    <td class="centered">
+                        <span class="input-symbol-nuyen"><input name="cost" class="box" type="number" value="{{item.system.cost}}" data-field="system.cost" /></span>
+                    </td>
+                    <td class="centered">
+                        <span class="input-symbol-nuyen"><input name="paid" class="box" type="number" value="{{item.system.paid}}" data-field="system.paid" /></span>
+                    </td>
+                    <td><input name="sin" class="box" type="text" value="{{item.system.sin}}" data-field="system.sin" /></td>
+                </tr>
+            </table>
+            <h3>{{localize 'shadowrun6.item.description'}}</h3>
+            {{addEditor owner editable "description"}}
+        </div>
+    </section>
+</form>

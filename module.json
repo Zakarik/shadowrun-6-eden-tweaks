@@ -1,0 +1,34 @@
+{
+  "id": "shadowrun-6-eden-ameliorations",
+  "title": "Shadowrun 6 Eden Améliorations",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "esmodules": [
+    "main.mjs"
+  ],
+  "styles": [
+    "styles/sr6.css"
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "shadowrun6-eden",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "authors": [
+    {
+      "name": "Zakarik",
+      "flags": {}
+    }
+  ],
+  "url": "#{URL}#",
+  "manifest": "#{MANIFEST}#",
+  "download": "#{DOWNLOAD}#",
+  "license": "./LICENSE"
+}

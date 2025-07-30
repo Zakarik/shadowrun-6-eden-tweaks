@@ -1,0 +1,16 @@
+.shadowrun6.item {
+    div {
+        &.editor {
+            min-height: 100px;
+        }
+
+        &.editor-container {
+            min-height: 100px;
+        }
+    }
+
+    dd.specialDescription {
+        margin-top: 20px;
+        padding: 0px;
+    }
+}
