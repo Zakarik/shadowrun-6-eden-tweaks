@@ -86,6 +86,7 @@ jobs:
             `# The files that will be included.` \
             module.json                          \
             main.mjs                          \
+            templates.js                          \
             README.md                            \
             LICENSE                              \
             sheets/                             \

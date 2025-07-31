@@ -1,7 +1,7 @@
 {
   "id": "shadowrun-6-eden-ameliorations",
   "title": "Shadowrun 6 Eden Améliorations",
-  "version": "1.0.0",
+  "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "12",
     "verified": "12"

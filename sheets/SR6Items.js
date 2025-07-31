@@ -1,6 +1,4 @@
 
-import { selectAllTextOnElement } from "/systems/shadowrun6-eden/module/util/HtmlUtilities.js";
-import { SYSTEM_NAME } from "/systems/shadowrun6-eden/module//constants.js";
 import { SR6ItemSheet } from "/systems/shadowrun6-eden/module/sheets/SR6ItemSheet.js";
 
 function getSystemData(obj) {
@@ -65,9 +63,10 @@ export class SR6Items extends SR6ItemSheet {
      * @param html {HTML}   The prepared HTML object ready to be rendered into the DOM
      */
     activateListeners(html) {
+        super.activateListeners(html);
         // Owner Only Listeners
         if (this.isEditable) {
-            html.find(".editor-content[data-edit]").each((i, div) => this._activateEditor(div));
+            html.find(".editor-content").each((i, div) => this._activateEditor(div));
         }
     }
 
