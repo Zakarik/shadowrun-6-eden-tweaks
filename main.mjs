@@ -1,10 +1,11 @@
 import { SR6Items } from "./sheets/SR6Items.js";
 import { SR6Actor } from "./sheets/SR6Actor.js";
+import { SR6Vehicle } from "./sheets/SR6Vehicle.js";
 import { preloadHandlebarsTemplates } from "./templates.js";
 
 Hooks.on('init', () => {
-
-    Actors.registerSheet("shadowrun6-eden", SR6Actor, { types: ["Player"], makeDefault: true });
+    Actors.registerSheet("shadowrun6-eden", SR6Vehicle, { types: ["Vehicle"], makeDefault: true });
+    /*Actors.registerSheet("shadowrun6-eden", SR6Actor, { types: ["Player"], makeDefault: true });
     Items.registerSheet("shadowrun6-eden", SR6Items, {
         types: [
             "gear",
@@ -39,9 +40,7 @@ Hooks.on('init', () => {
 
     Handlebars.registerHelper('sort', function (items) {
         // On suppose que 'items' est un tableau d'objets avec une propriété 'sort'
-            console.warn(items);
         if (Array.isArray(items.contents)) {
-            console.warn(items.contents);
             return items.contents.slice().sort((a, b) => {
                 if (a.sort < b.sort) return -1;
                 if (a.sort > b.sort) return 1;
@@ -49,7 +48,7 @@ Hooks.on('init', () => {
             });
         }
         return items;
-    });
+    });*/
 
-    preloadHandlebarsTemplates();
+    //preloadHandlebarsTemplates();
 });
