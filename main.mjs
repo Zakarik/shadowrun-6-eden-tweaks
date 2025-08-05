@@ -1,9 +1,13 @@
 import { SR6Items } from "./sheets/SR6Items.js";
 import { SR6Actor } from "./sheets/SR6Actor.js";
+import { SR6NPC } from "./sheets/SR6NPC.js";
+import { SR6BaseActor } from "./sheets/SR6BaseActor.js";
 import { SR6Vehicle } from "./sheets/SR6Vehicle.js";
 import { preloadHandlebarsTemplates } from "./templates.js";
 
 Hooks.on('init', () => {
+    CONFIG.Actor.documentClass = SR6BaseActor;
+    CONFIG.SR6.SPIRIT_TYPES.sang = 'SRT.Sang'
     Actors.registerSheet("shadowrun6-eden", SR6Vehicle, { types: ["Vehicle"], makeDefault: true });
     /*Actors.registerSheet("shadowrun6-eden", SR6Actor, { types: ["Player"], makeDefault: true });
     Items.registerSheet("shadowrun6-eden", SR6Items, {
