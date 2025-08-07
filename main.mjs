@@ -106,11 +106,15 @@ Hooks.on('renderActorDirectory', async function () {
                             const actor = await Actor.create(npc.to_vtt());
                             let msg = game.i18n.format("shadowrun6.ui.notifications.statblock_import.success", { actor: actor.name });
                             if (game.settings.get(SYSTEM_NAME, "importToCompendium")) {
-                                await game.packs.get("world.npcs").importDocument(actor);
+                                const cpActor = await game.packs.get("world.npcs").importDocument(actor);
                                 await actor?.delete();
                                 msg += game.i18n.format("shadowrun6.ui.notifications.statblock_import.npc_compendium");
+                                const itm = await fromUuid("Compendium.world.armes.Item.1SRjq998SN5BICqW");
+                                cpActor.createEmbeddedDocuments("Item", [itm]);
                             } else {
                                 msg += game.i18n.format("shadowrun6.ui.notifications.statblock_import.actor_tab");
+                                const itm = await fromUuid("Compendium.world.armes.Item.1SRjq998SN5BICqW");
+                                actor.createEmbeddedDocuments("Item", [itm]);
                             }
                             ui.notifications.info(msg, { localize: false, console: false });
                             console.log('SR6E | NPC Importer | Succesfully imported', actor.name);
