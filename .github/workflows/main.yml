@@ -92,6 +92,7 @@ jobs:
             sheets/                             \
             styles/                             \
             lang/                             \
+            util/                             \
             templates/
           # Don't forget to add a backslash at the end of the line for any
           # additional files or directories!
