@@ -1,4 +1,4 @@
-import { Shadowrun6Actor } from "/systems/shadowrun6-eden/module/Shadowrun6Actor.js";
+import Shadowrun6Actor from "/systems/shadowrun6-eden/module/documents/actor.js";
 
 function isLifeform(obj) {
     return obj.attributes != undefined;

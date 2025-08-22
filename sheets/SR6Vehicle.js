@@ -1,4 +1,4 @@
-import { Shadowrun6ActorSheetVehicle } from "/systems/shadowrun6-eden/module/sheets/ActorSheetVehicle.js";
+import Shadowrun6ActorSheetVehicle from "/systems/shadowrun6-eden/module/applications/sheets/ActorSheetVehicle.js";
 function getSystemData(obj) {
     if (game.release.generation >= 10)
         return obj.system;
