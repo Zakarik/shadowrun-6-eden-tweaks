@@ -89,7 +89,7 @@ export class SR6BaseActor extends Shadowrun6Actor {
     /*
      * Calculate the pool when using items with assigned skills
      */
-    _prepareItemPools() {
+    /*_prepareItemPools() {
         super._prepareItemPools();
         const actorData = getActorData(this);
         const system = getSystemData(this);
@@ -111,5 +111,5 @@ export class SR6BaseActor extends Shadowrun6Actor {
                 system.dmgDef = item.calculated.dmg + suffix;
             }
         });
-    }
+    }*/
 }

@@ -1,5 +1,4 @@
 
 import SR6ItemSheet from "/systems/shadowrun6-eden/module/applications/sheets/SR6ItemSheet.js";
 
-export class SR6Items extends SR6ItemSheet {
-}
+export class SR6Items extends SR6ItemSheet {}

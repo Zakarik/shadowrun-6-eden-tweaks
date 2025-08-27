@@ -1,0 +1,3 @@
+- Ajout de l'esprit de sang.
+- Modification des règles de vitesse des véhicules, pour compatibilité VF.
+- Modification du fonctionnement de l'import, pour y remplacer par un bouton.
