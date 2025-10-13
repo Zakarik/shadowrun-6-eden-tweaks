@@ -14,6 +14,32 @@ Hooks.on('init', () => {
       console.log("Paste intercepté par MON module !");
       // Optionnel : event.preventDefault(); pour empêcher aussi un éventuel default
     }, true); // true = phase de capture
+
+    libWrapper.register(
+        'shadowrun-6-eden-ameliorations',
+        'game.sr6.sr6roll.prototype.evaluate', // ou 'game.sr6.SR6Roll.prototype.evaluate'
+        async function (wrapped, options = {}) {
+            const useWildDie =
+                this?.data?.useWildDie ??
+                this?.configured?.useWildDie ??
+                options?.useWildDie ??
+                false;
+
+            if(useWildDie) {
+                this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
+            }
+
+            const ret = await wrapped(options); // appelle la version d’origine
+
+            if(useWildDie) {
+                this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
+            }
+
+            return ret; // on conserve la logique de base
+        },
+        'WRAPPER'
+    );
+    //preloadHandlebarsTemplates();
 });
 
 Hooks.on('ready', () => {
