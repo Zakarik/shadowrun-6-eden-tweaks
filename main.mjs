@@ -1,4 +1,5 @@
 import { SR6BaseActor } from "./sheets/SR6BaseActor.js";
+import { SR6Actor } from "./sheets/SR6Actor.js";
 import { SR6Vehicle } from "./sheets/SR6Vehicle.js";
 import { NPC } from "/systems/shadowrun6-eden/module/util/npc.js";
 import { SYSTEM_NAME } from "/systems/shadowrun6-eden/module/constants.js";
@@ -46,6 +47,12 @@ Hooks.on('ready', () => {
     queueMicrotask(() => {
         game.sr6.config = CONFIG.SR6 = new SR6TConfig();
     })
+
+    libWrapper.register(
+        'shadowrun-6-eden-ameliorations',
+        "CONFIG.Actor.sheetClasses.Player['shadowrun6-eden.Shadowrun6ActorSheetPC'].cls.prototype._render",
+        actorSheet_render,
+        "WRAPPER");
 });
 
 Hooks.on('renderActorDirectory', async function () {
@@ -108,4 +115,63 @@ Hooks.on('renderActorDirectory', async function () {
         dOptions);
         d.render(true);
       });
-  });
+});
+
+
+async function actorSheet_render(wrapped, ...args) {
+    await wrapped(...args);
+    if (!this.actor.isOwner) return;
+
+    const root = this.element?.[0];
+    if (!root) return;
+
+    // 1) Retrouver la table
+    const wanted = game.i18n.localize("shadowrun6.section.derived");
+    const wantedLower = wanted.toLowerCase();
+    const h2 = [...root.querySelectorAll('div.tab.basics div.section h2.section-title')]
+      .find(el => el.textContent.trim().toLowerCase() === wantedLower);
+    if (!h2) return;
+
+    const section = h2.closest('div.section');
+    const table = section?.querySelector(':scope > table');
+    if (!table) return;
+
+    const tbody = table.tBodies[0] || table.createTBody();
+
+    // 2) Préparer les données
+    const i18n = game.i18n;
+    const labelActions = i18n.localize("SRT.ActionsMM");
+    const modes = [
+      { key: "physical", label: i18n.localize("shadowrun6.initiative.physical"), pool: this.actor.system.initiative.physical?.dicePool ?? 0 },
+      { key: "astral",   label: i18n.localize("shadowrun6.initiative.astral"),   pool: this.actor.system.initiative.astral?.dicePool ?? 0 },
+      { key: "matrix",   label: i18n.localize("shadowrun6.initiative.matrix"),   pool: this.actor.system.initiative.matrix?.dicePool ?? 0 },
+    ];
+
+    // 3) Construire en mémoire puis injecter d’un coup
+    const frag = document.createDocumentFragment();
+
+    for (const { label, pool } of modes) {
+      const tr = document.createElement('tr');
+
+      const tdLeft = document.createElement('td');
+      tdLeft.colSpan = 3;
+      const b1 = document.createElement('b');
+      b1.textContent = labelActions;
+      const b2 = document.createElement('b');
+      b2.textContent = label;
+      tdLeft.append(b1, ' | ', b2);
+
+      const tdRight = document.createElement('td');
+      tdRight.style.textAlign = 'center';
+      const bL = document.createElement('b');
+      bL.textContent = '1';
+      const bR = document.createElement('b');
+      bR.textContent = String((Number(pool) || 0) + 1);
+      tdRight.append(bL, ' / ', bR);
+
+      tr.append(tdLeft, tdRight);
+      frag.appendChild(tr);
+    }
+
+    tbody.appendChild(frag);
+}
