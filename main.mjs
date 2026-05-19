@@ -18,6 +18,67 @@ Hooks.on('init', () => {
 
     libWrapper.register(
         'shadowrun-6-eden-ameliorations',
+        'game.sr6.sr6roll.prototype.evaluate',
+        async function (wrapped, options = {}) {
+            const useWildDie =
+                this?.data?.useWildDie ??
+                this?.configured?.useWildDie ??
+                options?.useWildDie ??
+                false;
+
+            if (!useWildDie || !this._formula || !this._formula.includes('cs>=5')) {
+                return wrapped(options);
+            }
+
+            const originalPool = this.data?.pool;
+            const originalConfiguredPool = this.configured?.pool;
+            const originalFormula = this._formula;
+
+            try {
+                if (this.data && typeof this.data.pool === 'number') {
+                    this.data.pool = this.data.pool + 1;
+                }
+                if (this.configured && typeof this.configured.pool === 'number') {
+                    this.configured.pool = this.configured.pool + 1;
+                }
+
+                const terms = originalFormula.split(' + ');
+                const newTerms = terms.map((term, idx) => {
+                    if (idx % 2 !== 0) return term;
+                    return term.replace(/^(\d+)d6/, (m, n) => `${parseInt(n, 10) + 1}d6`);
+                });
+                this._formula = newTerms.join(' + ');
+
+                const ret = await wrapped(options);
+
+                // Restaurer les valeurs originales pour l'affichage
+                if (this.data) this.data.pool = originalPool;
+                if (this.configured) this.configured.pool = originalConfiguredPool;
+
+                // Reconstruire la formule "propre" comme le ferait evaluateResult()
+                // basée sur le pool original (sans le +1 du wild die)
+                if (typeof originalPool === 'number') {
+                    this._formula = `${originalPool+1}d6`;
+                } else {
+                    this._formula = originalFormula;
+                }
+
+                return ret;
+            } catch (err) {
+                if (this.data) this.data.pool = originalPool;
+                if (this.configured) this.configured.pool = originalConfiguredPool;
+                this._formula = originalFormula;
+                throw err;
+            }
+        },
+        'WRAPPER'
+    );
+
+
+
+
+    /*libWrapper.register(
+        'shadowrun-6-eden-ameliorations',
         'game.sr6.sr6roll.prototype.evaluate', // ou 'game.sr6.SR6Roll.prototype.evaluate'
         async function (wrapped, options = {}) {
             const useWildDie =
@@ -26,20 +87,20 @@ Hooks.on('init', () => {
                 options?.useWildDie ??
                 false;
 
-            if(useWildDie) {
-                this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
-            }
+            if(useWildDie) this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
 
             const ret = await wrapped(options); // appelle la version d’origine
 
-            if(useWildDie) {
-                this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
-            }
+            if(useWildDie) this._formula = (Number(this._formula[0]) + 1).toString() + this._formula.slice(1);
 
             return ret; // on conserve la logique de base
         },
         'WRAPPER'
-    );
+    );*/
+
+    for(let status of CONFIG.statusEffects) {
+        status.label = status.name;
+    }
     //preloadHandlebarsTemplates();
 });
 
