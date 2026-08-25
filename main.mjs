@@ -1,24 +1,24 @@
-import { SR6BaseActor } from "./sheets/SR6BaseActor.js";
-import { SR6Actor } from "./sheets/SR6Actor.js";
+//import { SR6BaseActor } from "./sheets/SR6BaseActor.js";
+//import { SR6Actor } from "./sheets/SR6Actor.js";
 import { SR6Vehicle } from "./sheets/SR6Vehicle.js";
 import { NPC } from "/systems/shadowrun6-eden/module/util/npc.js";
 import { SYSTEM_NAME } from "/systems/shadowrun6-eden/module/constants.js";
-import { SR6TConfig } from "./util/config.js";
+//import { SR6TConfig } from "./util/config.js";
 
 Hooks.on('init', () => {
-    CONFIG.Actor.documentClass = SR6BaseActor;
-    game.sr6.config = CONFIG.SR6 = new SR6TConfig();
+    //CONFIG.Actor.documentClass = SR6BaseActor;
+    //game.sr6.config = CONFIG.SR6 = new SR6TConfig();
     Actors.registerSheet("shadowrun6-eden", SR6Vehicle, { types: ["Vehicle"], makeDefault: true });
-    document.addEventListener('paste', function(event) {
+    /*document.addEventListener('paste', function(event) {
       event.stopImmediatePropagation();
       // TA logique ici
       console.log("Paste intercepté par MON module !");
       // Optionnel : event.preventDefault(); pour empêcher aussi un éventuel default
-    }, true); // true = phase de capture
+    }, true);*/ // true = phase de capture
 
     libWrapper.register(
         'shadowrun-6-eden-ameliorations',
-        'game.sr6.sr6roll.prototype.evaluate',
+        'game.sr6.roll.prototype.evaluate',
         async function (wrapped, options = {}) {
             const useWildDie =
                 this?.data?.useWildDie ??
@@ -105,9 +105,9 @@ Hooks.on('init', () => {
 });
 
 Hooks.on('ready', () => {
-    queueMicrotask(() => {
+    /*queueMicrotask(() => {
         game.sr6.config = CONFIG.SR6 = new SR6TConfig();
-    })
+    })*/
 
     libWrapper.register(
         'shadowrun-6-eden-ameliorations',

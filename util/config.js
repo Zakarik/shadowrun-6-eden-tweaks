@@ -1,4 +1,4 @@
-import {SR6Config} from "/systems/shadowrun6-eden/module/config.js";
+/*import {SR6Config} from "/systems/shadowrun6-eden/module/config.js";
 
 export class SR6TConfig extends SR6Config {
     SPIRIT_TYPES = {
@@ -14,4 +14,4 @@ export class SR6TConfig extends SR6Config {
         task: "shadowrun6.spirittype.task",
         sang: "SRT.Sang",
     };
-}
+}*/
