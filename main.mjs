@@ -297,11 +297,35 @@ function isTokenizerEligible(target) {
 }
 
 /**
+ * Résout le chemin de l'image selon data-image-path
+ * @returns {string} Le chemin de l'image à afficher
+ */
+function resolveImagePath(app, target) {
+  const imagePath = target.dataset.imagePath;
+
+  // Pas de data-image-path : utiliser le src de l'image
+  if (!imagePath) {
+    return target.src || target.currentSrc;
+  }
+
+  // "img" est le chemin standard Foundry (actor.img)
+  if (imagePath === "img") {
+    return app.document.img || target.src || target.currentSrc;
+  }
+
+  // Sinon : chercher dans le système (system.imagePath)
+  const systemPath = foundry.utils.getProperty(app.document.system, imagePath);
+  if (systemPath) return systemPath;
+
+  // Fallback sur le src de l'image affichée
+  return target.src || target.currentSrc;
+}
+
+/**
  * Ouvre la preview d'image en grand
  */
 async function openImagePreview(app, target) {
-  const src = target.src || target.currentSrc;
-  const img = app.document.img || src;
+  const img = resolveImagePath(app, target);
 
   new ImagePopout(img, {
     title: app.document.name,
@@ -314,35 +338,25 @@ async function openImagePreview(app, target) {
  * Ouvre l'éditeur d'image natif (FilePicker)
  */
 async function openNativeImageEditor(app, target) {
-  const attr = target.dataset.imagePath
-    ? (target.dataset.imagePath === "img" ? "img" : `system.${target.dataset.imagePath}`)
-    : target.dataset.edit || "img";
+    const image = target;
 
-  const current = foundry.utils.getProperty(app.document._source, attr) || target.src;
-  const defaultArtwork = app.document.constructor.getDefaultArtwork?.(app.document._source) ?? {};
-  const defaultImage = foundry.utils.getProperty(defaultArtwork, attr);
+    if (app.document.limited || app.options.limited) return;
 
-  const fp = new FilePicker.implementation({
-    current,
-    type: "image",
-    redirectToRoot: defaultImage ? [defaultImage] : [],
-    callback: path => {
-      target.src = path;
-      if (app.options?.form?.submitOnChange && app.form) {
-        const submit = new Event("submit", { cancelable: true });
-        app.form.dispatchEvent(submit);
-      } else {
-        const update = attr === "img" ? { img: path } : { [attr]: path };
-        app.document.update(update);
-      }
-    },
-    position: {
-      top: (app.position?.top ?? 0) + 40,
-      left: (app.position?.left ?? 0) + 10
-    }
-  });
+    const attr = image.dataset.imagePath;
+    const current = foundry.utils.getProperty(app.document, attr) ?? app.document.img;
 
-  await fp.browse();
+    const { img } = app.document.constructor.getDefaultArtwork?.(app.document.toObject()) ?? {};
+    const fp = new foundry.applications.apps.FilePicker.implementation({
+        current,
+        type: 'image',
+        redirectToRoot: img ? [img] : [],
+        callback: (path) => {
+            app.document.update({ [attr]: path });
+        },
+        top: app.position.top + 40,
+        left: app.position.left + 10,
+    });
+    return fp.browse();
 }
 
 function patchActorSheet(app) {
