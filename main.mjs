@@ -288,6 +288,15 @@ function shouldLaunchTokenizer(event, settings) {
 }
 
 /**
+ * Vérifie si l'image est éligible au Tokenizer
+ * Exclut les images "persona" (icônes de personnage dans le chat, etc.)
+ */
+function isTokenizerEligible(target) {
+  const imagePath = target.dataset.imagePath || "";
+  return !imagePath.toLowerCase().includes("persona");
+}
+
+/**
  * Ouvre la preview d'image en grand
  */
 async function openImagePreview(app, target) {
@@ -352,9 +361,10 @@ function patchActorSheet(app) {
     if (!target) return;
 
     const settings = getTokenizerSettings();
+    const eligible = isTokenizerEligible(target);
 
     // Permission player : si tokenizer indique de bloquer et qu'on est player
-    if (isTokenizerAvailable()) {
+    if (isTokenizerAvailable() && eligible) {
       let playerDisabled = false;
       try {
         playerDisabled = game.settings.get(TOKENIZER_ID, "disable-player");
@@ -367,7 +377,8 @@ function patchActorSheet(app) {
       }
     }
 
-    const launchTokenizer = shouldLaunchTokenizer(event, settings);
+    // Déterminer l'action : Tokenizer ou preview native
+    const launchTokenizer = eligible && shouldLaunchTokenizer(event, settings);
 
     // Bloquer l'événement natif
     event.preventDefault();
@@ -375,10 +386,9 @@ function patchActorSheet(app) {
     event.stopImmediatePropagation();
 
     if (launchTokenizer) {
-      // Tokenizer confirmé disponible par shouldLaunchTokenizer
       getTokenizerApi().tokenizeDoc(app.document);
     } else {
-      // Preview native
+      // Preview native (fallback si pas éligible ou si settings disent non)
       await openImagePreview(app, target);
     }
   }, true);
@@ -389,7 +399,7 @@ function patchActorSheet(app) {
     const target = event.target.closest("img.profile-img");
     if (!target) return;
 
-    // Bloquer le menu contextuel nativ de Firefox
+    // Bloquer le menu contextuel natif de Firefox
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
