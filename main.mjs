@@ -114,6 +114,18 @@ Hooks.on('ready', () => {
         "CONFIG.Actor.sheetClasses.Player['shadowrun6-eden.Shadowrun6ActorSheetPC'].cls.prototype._render",
         actorSheet_render,
         "WRAPPER");
+
+    const seen = new Set();
+    const entries = Object.values(CONFIG.Actor.sheetClasses)
+        .flatMap(scope => Object.values(scope));
+
+    for (const entry of entries) {
+        const cls = entry.cls ?? entry.sheet;      // selon version, l'un ou l'autre
+        if (!cls?.name || seen.has(cls)) continue;
+        seen.add(cls);
+        Hooks.on(`render${cls.name}`, patchActorSheet);
+    }
+
 });
 
 Hooks.on('renderActorDirectory', async function () {
@@ -178,7 +190,6 @@ Hooks.on('renderActorDirectory', async function () {
       });
 });
 
-
 async function actorSheet_render(wrapped, ...args) {
     await wrapped(...args);
     if (!this.actor.isOwner) return;
@@ -235,4 +246,155 @@ async function actorSheet_render(wrapped, ...args) {
     }
 
     tbody.appendChild(frag);
+}
+
+const TOKENIZER_ID = "vtta-tokenizer";
+
+/**
+ * Vérifie si le module Tokenizer est présent, actif, et a l'API nécessaire
+ */
+function isTokenizerAvailable() {
+  const mod = game.modules.get(TOKENIZER_ID);
+  return mod?.active === true && typeof mod.api?.tokenizeDoc === "function";
+}
+
+/**
+ * Récupère le paramétrage natif du Tokenizer pour le comportement shift/clic
+ * @returns {{disabled: boolean, shiftClick: boolean}}
+ */
+function getTokenizerSettings() {
+  if (!isTokenizerAvailable()) {
+    return { disabled: true, shiftClick: false };
+  }
+
+  try {
+    const disabled = game.settings.get(TOKENIZER_ID, "disable-avatar-click");
+    const shiftClick = game.settings.get(TOKENIZER_ID, "shift-click");
+    return { disabled, shiftClick };
+  } catch (e) {
+    return { disabled: false, shiftClick: false };
+  }
+}
+
+/**
+ * Détermine si on doit lancer le Tokenizer selon l'événement et les settings
+ */
+function shouldLaunchTokenizer(event, settings) {
+  if (settings.disabled) return false;
+
+  return settings.shiftClick
+    ? event.shiftKey
+    : !event.shiftKey;
+}
+
+/**
+ * Ouvre la preview d'image en grand
+ */
+async function openImagePreview(app, target) {
+  const src = target.src || target.currentSrc;
+  const img = app.document.img || src;
+
+  new ImagePopout(img, {
+    title: app.document.name,
+    shareable: true,
+    uuid: app.document.uuid
+  }).render(true);
+}
+
+/**
+ * Ouvre l'éditeur d'image natif (FilePicker)
+ */
+async function openNativeImageEditor(app, target) {
+  const attr = target.dataset.imagePath
+    ? (target.dataset.imagePath === "img" ? "img" : `system.${target.dataset.imagePath}`)
+    : target.dataset.edit || "img";
+
+  const current = foundry.utils.getProperty(app.document._source, attr) || target.src;
+  const defaultArtwork = app.document.constructor.getDefaultArtwork?.(app.document._source) ?? {};
+  const defaultImage = foundry.utils.getProperty(defaultArtwork, attr);
+
+  const fp = new FilePicker.implementation({
+    current,
+    type: "image",
+    redirectToRoot: defaultImage ? [defaultImage] : [],
+    callback: path => {
+      target.src = path;
+      if (app.options?.form?.submitOnChange && app.form) {
+        const submit = new Event("submit", { cancelable: true });
+        app.form.dispatchEvent(submit);
+      } else {
+        const update = attr === "img" ? { img: path } : { [attr]: path };
+        app.document.update(update);
+      }
+    },
+    position: {
+      top: (app.position?.top ?? 0) + 40,
+      left: (app.position?.left ?? 0) + 10
+    }
+  });
+
+  await fp.browse();
+}
+
+function patchActorSheet(app) {
+  const root = app.element?.[0] ?? app.element;
+  if (!(root instanceof HTMLElement)) return;
+  if (!(app.document instanceof Actor)) return;
+  if (root._tokenizerPatched) return;
+  root._tokenizerPatched = true;
+
+  // Référence lazy au tokenizer (évaluée au moment de l'usage)
+  const getTokenizerApi = () => game.modules.get(TOKENIZER_ID)?.api;
+
+  // ========== CLIQUE GAUCHE ==========
+  root.addEventListener("click", async (event) => {
+    const target = event.target.closest("img.profile-img");
+    if (!target) return;
+
+    const settings = getTokenizerSettings();
+
+    // Permission player : si tokenizer indique de bloquer et qu'on est player
+    if (isTokenizerAvailable()) {
+      let playerDisabled = false;
+      try {
+        playerDisabled = game.settings.get(TOKENIZER_ID, "disable-player");
+      } catch {}
+      if (!game.user.can("FILES_UPLOAD") && playerDisabled) {
+        event.preventDefault();
+        event.stopPropagation();
+        await openImagePreview(app, target);
+        return;
+      }
+    }
+
+    const launchTokenizer = shouldLaunchTokenizer(event, settings);
+
+    // Bloquer l'événement natif
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (launchTokenizer) {
+      // Tokenizer confirmé disponible par shouldLaunchTokenizer
+      getTokenizerApi().tokenizeDoc(app.document);
+    } else {
+      // Preview native
+      await openImagePreview(app, target);
+    }
+  }, true);
+
+  // ========== CLIQUE DROIT : Edit natif + bloquer menu Firefox ==========
+  // TOUJOURS ACTIF, même sans Tokenizer !
+  root.addEventListener("contextmenu", async (event) => {
+    const target = event.target.closest("img.profile-img");
+    if (!target) return;
+
+    // Bloquer le menu contextuel nativ de Firefox
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    // Ouvrir l'éditeur d'image standard de Foundry
+    await openNativeImageEditor(app, target);
+  }, true);
 }
