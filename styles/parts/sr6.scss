@@ -1,16 +1,58 @@
-.shadowrun6.item {
-    div {
-        &.editor {
-            min-height: 100px;
+.shadowrun6 {
+    &.item {
+        div {
+            &.editor {
+                min-height: 100px;
+            }
+
+            &.editor-container {
+                min-height: 100px;
+            }
         }
 
-        &.editor-container {
-            min-height: 100px;
+        dd.specialDescription {
+            margin-top: 20px;
+            padding: 0px;
         }
     }
 
-    dd.specialDescription {
-        margin-top: 20px;
-        padding: 0px;
+    &.actor {
+        section.pan {
+
+            li.pan-node.pan-collapsible {
+
+                & > .section-row .pan-tree-name {
+                    cursor: pointer;
+                    user-select: none;
+
+                    &::before {
+                        content: "\25BC"; // ▼ triangle noir pointant vers le bas
+                        font-size: 0.7em;
+                        margin-right: 4px;
+                        display: inline-block;
+                        transition: transform 0.15s ease;
+                        vertical-align: middle;
+                    }
+                }
+
+                & > ol.pan-children {
+                    overflow: hidden;
+                    max-height: 2000px; // valeur arbitrairement grande pour la transition
+                    transition: max-height 0.25s ease, opacity 0.2s ease;
+                }
+
+                &.pan-collapsed {
+
+                    & > .section-row .pan-tree-name::before {
+                        transform: rotate(-90deg); // devient un ▶
+                    }
+
+                    & > ol.pan-children {
+                        max-height: 0;
+                        opacity: 0;
+                    }
+                }
+            }
+        }
     }
 }

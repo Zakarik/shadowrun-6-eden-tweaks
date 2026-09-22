@@ -5,6 +5,9 @@ import { NPC } from "/systems/shadowrun6-eden/module/util/npc.js";
 import { SYSTEM_NAME } from "/systems/shadowrun6-eden/module/constants.js";
 //import { SR6TConfig } from "./util/config.js";
 
+const PAN_FLAG_SCOPE = 'shadowrun-6-eden-ameliorations';
+const PAN_FLAG_KEY = 'panCollapsed';
+
 Hooks.on('init', () => {
     //CONFIG.Actor.documentClass = SR6BaseActor;
     //game.sr6.config = CONFIG.SR6 = new SR6TConfig();
@@ -105,12 +108,8 @@ Hooks.on('init', () => {
 });
 
 Hooks.on('ready', () => {
-    /*queueMicrotask(() => {
-        game.sr6.config = CONFIG.SR6 = new SR6TConfig();
-    })*/
-
     libWrapper.register(
-        'shadowrun-6-eden-ameliorations',
+        PAN_FLAG_SCOPE,
         "CONFIG.Actor.sheetClasses.Player['shadowrun6-eden.Shadowrun6ActorSheetPC'].cls.prototype._render",
         actorSheet_render,
         "WRAPPER");
@@ -125,7 +124,6 @@ Hooks.on('ready', () => {
         seen.add(cls);
         Hooks.on(`render${cls.name}`, patchActorSheet);
     }
-
 });
 
 Hooks.on('renderActorDirectory', async function () {
@@ -194,6 +192,134 @@ async function actorSheet_render(wrapped, ...args) {
     await wrapped(...args);
     if (!this.actor.isOwner) return;
 
+    injectInitiativeActions(this);
+    setupPanCollapse(this);
+}
+
+/**
+ * Lignes Actions majeures/mineures dans la section Derived
+ */
+function injectInitiativeActions(sheet) {
+    const root = sheet.element?.[0];
+    if (!root) return;
+
+    const wanted = game.i18n.localize("shadowrun6.section.derived");
+    const wantedLower = wanted.toLowerCase();
+    const h2 = [...root.querySelectorAll('div.tab.basics div.section h2.section-title')]
+        .find(el => el.textContent.trim().toLowerCase() === wantedLower);
+    if (!h2) return;
+
+    const section = h2.closest('div.section');
+    const table = section?.querySelector(':scope > table');
+    if (!table) return;
+
+    const tbody = table.tBodies[0] || table.createTBody();
+
+    const i18n = game.i18n;
+    const labelActions = i18n.localize("SRT.ActionsMM");
+    const modes = [
+        { key: "physical", label: i18n.localize("shadowrun6.initiative.physical"), pool: sheet.actor.system.initiative.physical?.dicePool ?? 0 },
+        { key: "astral",   label: i18n.localize("shadowrun6.initiative.astral"),   pool: sheet.actor.system.initiative.astral?.dicePool ?? 0 },
+        { key: "matrix",   label: i18n.localize("shadowrun6.initiative.matrix"),   pool: sheet.actor.system.initiative.matrix?.dicePool ?? 0 },
+    ];
+
+    const frag = document.createDocumentFragment();
+
+    for (const { label, pool } of modes) {
+        const tr = document.createElement('tr');
+
+        const tdLeft = document.createElement('td');
+        tdLeft.colSpan = 3;
+        const b1 = document.createElement('b');
+        b1.textContent = labelActions;
+        const b2 = document.createElement('b');
+        b2.textContent = label;
+        tdLeft.append(b1, ' | ', b2);
+
+        const tdRight = document.createElement('td');
+        tdRight.style.textAlign = 'center';
+        const bL = document.createElement('b');
+        bL.textContent = '1';
+        const bR = document.createElement('b');
+        bR.textContent = String((Number(pool) || 0) + 1);
+        tdRight.append(bL, ' / ', bR);
+
+        tr.append(tdLeft, tdRight);
+        frag.appendChild(tr);
+    }
+
+    tbody.appendChild(frag);
+}
+
+/**
+ * Repli des nœuds du PAN, avec persistance par flag d'acteur
+ */
+function panNodeKey(li) {
+    const name = li.querySelector(':scope > .section-row .pan-node-name')?.textContent.trim() ?? '';
+    const type = [...li.classList]
+        .find(c => c.startsWith('pan-node-') && c !== 'pan-node-own') ?? '';
+    return `${type}::${name}`.replaceAll('.', '_');
+}
+
+function setupPanCollapse(sheet) {
+    const root = sheet.element?.[0];
+    if (!root) return;
+
+    const collapsedState = sheet.actor.getFlag(PAN_FLAG_SCOPE, PAN_FLAG_KEY) ?? {};
+
+    // Marquer les nœuds repliables et restaurer l'état persisté
+    root.querySelectorAll('li.pan-node').forEach(li => {
+        if (!li.querySelector(':scope > ol.pan-children')) return;
+
+        li.dataset.panKey = panNodeKey(li);
+        li.classList.add('pan-collapsible');
+        li.classList.toggle('pan-collapsed', !!collapsedState[li.dataset.panKey]);
+    });
+
+    // Listener délégué, attaché une seule fois par élément DOM
+    if (root._panCollapsePatched) return;
+    root._panCollapsePatched = true;
+
+    root.addEventListener('click', async (event) => {
+        const treeName = event.target.closest('li.pan-node.pan-collapsible > .section-row .pan-tree-name');
+        if (!treeName) return;
+
+        // Sécurité : ne pas replier si on clique sur un contrôle
+        if (event.target.closest('.item-controls a, input, a.item-control')) return;
+
+        const li = treeName.closest('li.pan-node');
+        const key = li.dataset.panKey;
+
+        // Toggle visuel immédiat
+        const isCollapsed = li.classList.toggle('pan-collapsed');
+
+        // Persistance sans re-render de la fiche
+        const newState = foundry.utils.deepClone(
+            sheet.actor.getFlag(PAN_FLAG_SCOPE, PAN_FLAG_KEY) ?? {}
+        );
+
+        const flagPath = `flags.${PAN_FLAG_SCOPE}.${PAN_FLAG_KEY}.${key}`;
+
+        if (isCollapsed) {
+            await sheet.actor.update({ [flagPath]: true }, { render: false });
+        } else {
+            await sheet.actor.update({ [`flags.${PAN_FLAG_SCOPE}.${PAN_FLAG_KEY}.-=${key}`]: null }, { render: false });
+        }
+    });
+}
+
+/*async function actorSheet_render(wrapped, ...args) {
+    await wrapped(...args);
+    if (!this.actor.isOwner) return;
+
+    injectInitiativeActions(this);
+    setupPanCollapse(this);
+}
+
+async function actorSheet_render(wrapped, ...args) {
+    await wrapped(...args);
+    if (!this.actor.isOwner) return;
+
     const root = this.element?.[0];
     if (!root) return;
 
@@ -246,7 +372,7 @@ async function actorSheet_render(wrapped, ...args) {
     }
 
     tbody.appendChild(frag);
-}
+}*/
 
 const TOKENIZER_ID = "vtta-tokenizer";
 
